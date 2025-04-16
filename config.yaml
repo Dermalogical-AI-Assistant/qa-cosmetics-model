@@ -1,0 +1,5 @@
+---
+# KG-RAG hyperparameters
+SENTENCE_EMBEDDING_MODEL_FOR_NODE_RETRIEVAL : 'sentence-transformers/all-MiniLM-L6-v2'
+SENTENCE_EMBEDDING_MODEL_FOR_SENTENCE_RETRIEVAL : 'sentence-transformers/multi-qa-mpnet-base-dot-v1'
+LLM_TEMPERATURE : 0.3
