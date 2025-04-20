@@ -1,7 +1,8 @@
 from pydantic import BaseModel, validator
 from fastapi import FastAPI
 from answer import get_answer
-from utils.common import get_json
+from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 class QuestionAnswerRequest(BaseModel):
     question: str
@@ -25,11 +26,23 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.post("/cosmetics-answer")
 async def generate_cosmetics_answer(request: QuestionAnswerRequest):
     question = request.question
-    answer = get_answer(question=question)
-    return get_json(answer)
+
+    def event_generator():
+        for chunk in get_answer(question):
+            yield f"{chunk}\n\n"  # SSE format
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @app.get("/")
 def read_root():

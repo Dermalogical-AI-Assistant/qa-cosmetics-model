@@ -58,10 +58,5 @@ FINAL_ANSWER_PROMPT_TEMPLATE: |
   - Output2: Show the inference path used to arrive at the conclusion by extracting evidence from graph evidence.
   - Output3: Provide provenance for the evidence used (e.g., relationship types and nodes involved, any source labels from the graph if available)
 
-  Then, return the result in the following JSON format:
-  {{
-    "Answer": "<direct answer>",
-    "Summary of key information": ["<summary of key info>"],
-    "Inference": ["<inference path>"],
-    "Provenance": ["<provenance>"]
-  }}
+  Finally, return only the Direct Answer **as a plain string** with no quotes, no labels, and no additional explanation.
+

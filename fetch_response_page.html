@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SSE Streaming Test</title>
+</head>
+<body>
+    <h2>Streaming API Response:</h2>
+    <div id="output"></div>
+
+    <script>
+        async function fetchStreamedAnswer() {
+            const response = await fetch("http://localhost:8000/cosmetics-answer", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ question: "What is Retinol?" })
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            const output = document.getElementById("output");
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value);
+                output.innerHTML += chunk + "<br>";
+            }
+        }
+
+        fetchStreamedAnswer();
+    </script>
+</body>
+</html>

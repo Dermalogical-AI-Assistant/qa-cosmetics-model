@@ -9,13 +9,18 @@ import json
 def fetch_final_answer(question, context, llm=gemini_2_flash):
     prompt_template = PromptTemplate.from_template(FINAL_ANSWER_PROMPT_TEMPLATE)
     formatted_prompt = prompt_template.invoke({"question": question, "context": context})
-    response = llm.invoke(formatted_prompt)
-    return response.content
+
+    for chunk in llm.stream(formatted_prompt):
+        if hasattr(chunk, "content") and chunk.content:
+            yield chunk.content
 
 def get_answer(question):
     # 1. Entity Extraction
     entities = recognize_entities(question)
     print('entities: \n', json.dumps(entities, indent=4))
+    
+    if entities is None:
+        yield from fetch_final_answer(question=question, context="", llm=gemini_2_flash)
     
     # 2. Relevant Node Types and Relationships Extraction
     node_types_relationships = extract_node_types_relationships_in_question(question)
@@ -28,5 +33,5 @@ def get_answer(question):
     context = retrieve_context(entities=entities, relationships=relationships)
     print(f'context = {context}')
     
-    output_all = fetch_final_answer(question=question, context=context, llm=gemini_2_flash)
-    return output_all
+    # 4. Stream the final answer
+    yield from fetch_final_answer(question=question, context=context, llm=gemini_2_flash)

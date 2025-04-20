@@ -128,8 +128,8 @@ def search_triplet_info(list_products, list_ingredients, relationships):
             return []
 
 def retrieve_graph_database(entities, relationships):
-    list_products = entities['list_products']
-    list_ingredients = entities['list_ingredients']
+    list_products = entities.get('list_products', [])
+    list_ingredients = entities.get('list_ingredients', [])
 
     product_nodes = search_node_info(node_type='Product', list_titles=list_products)  
     ingredient_nodes = search_node_info(node_type='Ingredient', list_titles=list_ingredients)    
