@@ -29,6 +29,20 @@ def vector_search_by_ingredient_benefit(query_benefit: str, top_k: int = 5) -> L
         ]
     return products_with_ingredient_benefit
 
+def vector_search_by_description(label: str, query: str, top_k: int = 7):
+    embedding = embedding_model_sentence_retrieval.embed_query(query)
+
+    cypher = f"""
+        CALL db.index.vector.queryNodes('{label.lower()}_description_embedding_vector_index', $topK, $embedding)
+        YIELD node, score
+        RETURN node.title AS title, score
+        ORDER BY score DESC
+    """
+
+    with driver.session() as session:
+        results = session.run(cypher, embedding=embedding, topK=top_k)
+        return results.data()
+
 def vector_search(label: str, query: str, top_k: int = 1):
     embedding = embedding_model_node_retrieval.embed_query(query)
 
@@ -126,11 +140,16 @@ def search_triplet_info(list_products, list_ingredients, relationships):
         except Exception as e:
             print(f"Error executing query: {e}")
             return []
+        
+def retrieve_graph_database_without_entities(node_types, query):
+    result = {}
+    for node_type in node_types:
+        nodes = vector_search_by_description(label=node_type,query=query, top_k=10)
+        result[f"{node_type.lower()}"] = [n['title'] for n in nodes]
+    
+    return result
 
-def retrieve_graph_database(entities, relationships):
-    list_products = entities['list_products']
-    list_ingredients = entities['list_ingredients']
-
+def retrieve_graph_database(list_products, list_ingredients, relationships):
     product_nodes = search_node_info(node_type='Product', list_titles=list_products)  
     ingredient_nodes = search_node_info(node_type='Ingredient', list_titles=list_ingredients)    
       
@@ -156,8 +175,24 @@ def retrieve_graph_database(entities, relationships):
         'products_with_ingredient_benefit': products_with_ingredient_benefit
     }  
 
-def retrieve_context(entities, relationships=[]):
-    data = retrieve_graph_database(entities=entities, relationships=relationships)
+def retrieve_context(entities, relationships=[], node_types=[], query=""):
+    if entities:
+        list_products = entities.get('list_products')
+        list_ingredients = entities.get('list_ingredients')
+    else: 
+        list_products = []
+        list_ingredients = []
+
+    if not list_products and not list_ingredients:
+        data = retrieve_graph_database_without_entities(node_types=node_types, query=query)
+        list_products = data.get('product')
+        list_ingredients = data.get('ingredient')
+        
+    data = retrieve_graph_database(
+        list_products=list_products, 
+        list_ingredients=list_ingredients, 
+        relationships=relationships
+    )
     product_nodes = data['product_nodes']
     ingredient_nodes = data['ingredient_nodes']
     subgraphs = data['subgraphs']
@@ -171,13 +206,16 @@ def retrieve_context(entities, relationships=[]):
         for product in product_nodes:
             product_context = f"- Product {product['title']} targets {', '.join(product['skincare_concern'])} concerns."
             
-            if product.get('description'):
+            description = product.get('description')
+            if description and isinstance(description, str):
                 product_context += f" It is described as: {product['description'].strip()}."
               
-            if product.get('how_to_use'):
+            how_to_use = product.get('how_to_use')
+            if how_to_use and isinstance(how_to_use, str):
                 product_context += f" How to use: {product['how_to_use'].strip()}."
             
-            if product.get('ingredient_benefits'):
+            ingredient_benefits = product.get('ingredient_benefits')
+            if ingredient_benefits and isinstance(ingredient_benefits, str):
                 product_context += f" Ingredient benefits include: {product['ingredient_benefits']}."
             
             context_product += product_context + "\n"
@@ -227,7 +265,9 @@ def retrieve_context(entities, relationships=[]):
         for (product, ingredient), relationships in grouped.items():
             subgraph_context = f"Product '{product}' contains the ingredient {ingredient}, which has the following effects:\n"
             for rel in relationships:
-                effect = f"- {rel['rel_type'].lower()} {rel['title'].lower()}"
+                effect = f"- {rel['rel_type'].lower()}"
+                if rel['title']:
+                    effect += f" {rel['title'].lower()}"
                 if rel['description']:
                     effect += f": {rel['description']}"
                 subgraph_context += f"{effect}\n"

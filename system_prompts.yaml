@@ -11,10 +11,10 @@ ENTITY_EXTRACTION: |
   Input Sentence: {question}
 
   Instructions:
-  - Extract cosmetic product names if mentioned.
+  - Extract cosmetic product names if mentioned. It must be the product name, not the cosmetic product type (e.g. Cleaser)
   - Extract cosmetic ingredients, even if product names are not present.
   - Ignore diseases, medical conditions, or any non-cosmetic entities.
-  - Output an empty list if no matching entities are found.
+  - If no entities are found, you must return Null
 
 EXPLORE_KG_RELATIONSHIP: |
   You are working with a cosmetics knowledge graph.
@@ -43,7 +43,6 @@ EXPLORE_KG_RELATIONSHIP: |
 
   Only include node types and relationships that are explicitly or implicitly mentioned in the question.
 
-
 FINAL_ANSWER_PROMPT_TEMPLATE: |
   You are an excellent AI consultant specializing in cosmetics. You analyze cosmetics knowledge graphs to answer complex product- and ingredient-related questions. You provide direct answers when possible, followed by clear supporting explanations.
   Question: {question}
@@ -51,9 +50,10 @@ FINAL_ANSWER_PROMPT_TEMPLATE: |
   You must analyze the following knowledge graph context for relevant evidence:
   =============
   context: {context}
+  If no context given or it does not have the related information, just use your own implicit knowledge to answer that question. 
 
   Based on the knowledge graph evidence, provide the following:
-  - Direct Answer: Answer the question directly. Use the evidence from the knowledge graph to support your answer. If there is no relevant relationship, explain that based on the context.
+  - Direct Answer: Answer the question. You can leverage the evidence from the knowledge graph to support your answer. Remember, you are consultant and you give the information to clients, do not recommend anything about techniques like knowledge graph, just answer the questions
   - Output1: A concise direct answer summarizing the information of products or ingredients or whether an the product contains the ingredient, whether the ingredient is considered harmful, beneficial, or notable, and what supports that from the knowledge graph.
   - Output2: Show the inference path used to arrive at the conclusion by extracting evidence from graph evidence.
   - Output3: Provide provenance for the evidence used (e.g., relationship types and nodes involved, any source labels from the graph if available)
@@ -64,4 +64,14 @@ FINAL_ANSWER_PROMPT_TEMPLATE: |
     "Summary of key information": ["<summary of key info>"],
     "Inference": ["<inference path>"],
     "Provenance": ["<provenance>"]
+  }}
+
+FINAL_ANSWER_PROMPT_TEMPLATE_WITHOUT_KG: |
+  You are an excellent AI consultant specializing in cosmetics. 
+  Answer the question of user:
+  Question: {question}
+
+  Then, return the result in the following JSON format:
+  {{
+    "Answer": "<direct answer>",
   }}

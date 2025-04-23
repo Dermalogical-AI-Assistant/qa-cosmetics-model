@@ -6,8 +6,8 @@ from utils.get_env_variables import *
 from utils.get_llm import gemini_2_flash
 import json
 
-def fetch_final_answer(question, context, llm=gemini_2_flash):
-    prompt_template = PromptTemplate.from_template(FINAL_ANSWER_PROMPT_TEMPLATE)
+def fetch_final_answer(question, context, llm=gemini_2_flash, prompt_template=FINAL_ANSWER_PROMPT_TEMPLATE):
+    prompt_template = PromptTemplate.from_template(prompt_template)
     formatted_prompt = prompt_template.invoke({"question": question, "context": context})
     response = llm.invoke(formatted_prompt)
     return response.content
@@ -24,9 +24,12 @@ def get_answer(question):
     print('node_types: \n', json.dumps(node_types, indent=4))
     print('relationships: \n', json.dumps(relationships, indent=4))
     
-    # 3. Retrieve context
-    context = retrieve_context(entities=entities, relationships=relationships)
-    print(f'context = {context}')
+    if entities or node_types:
+        # 3. Retrieve context
+        context = retrieve_context(entities=entities, relationships=relationships, node_types=node_types, query=question)
+        print(f'context = {context}')
+        output_all = fetch_final_answer(question=question, context=context, llm=gemini_2_flash)
+    else: 
+        output_all = fetch_final_answer(question=question, context="", llm=gemini_2_flash, prompt_template=FINAL_ANSWER_PROMPT_TEMPLATE_WITHOUT_KG)
     
-    output_all = fetch_final_answer(question=question, context=context, llm=gemini_2_flash)
     return output_all

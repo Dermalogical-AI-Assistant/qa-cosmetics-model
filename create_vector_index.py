@@ -11,6 +11,20 @@ def fetch_titles(tx, label: str) -> List[str]:
     """
     return [record["title"] for record in tx.run(query)]
 
+def fetch_descriptions(tx, label: str) -> List[Tuple[str, str]]:
+    query = f"""
+        MATCH (n:{label})
+        WHERE n.description IS NOT NULL
+        RETURN n.title AS title, n.description AS description
+    """
+    results = []
+    for record in tx.run(query):
+        title = record["title"]
+        description = record["description"]
+        if description and isinstance(description, str):
+            clean_description = description.replace("\n", " ").strip()
+            results.append((title, clean_description))
+    return results
 
 def fetch_ingredient_benefits(tx) -> List[Tuple[str, str]]:
     query = """
@@ -51,6 +65,23 @@ def embed_and_update_titles(label: str):
         session.write_transaction(store_embeddings, data, "title_embedding")
         print(f"✅ Done with title embeddings for {label}.\n")
 
+def embed_and_update_descriptions(label: str):
+    with driver.session() as session:
+        print(f"🔍 Fetching {label} descriptions...")
+        records = session.read_transaction(fetch_descriptions, label)
+        if not records:
+            print(f"⚠️ No descriptions found for {label}.")
+            return
+
+        titles, descriptions = zip(*records)
+        print(f"🧠 Embedding {len(descriptions)} descriptions for {label}...")
+        embeddings = embedding_model_sentence_retrieval.embed_documents(descriptions)
+
+        print(f"💾 Storing description embeddings for {label}...")
+        data = list(zip(titles, embeddings))
+        session.write_transaction(store_embeddings, data, "description_embedding")
+        print(f"✅ Done with description embeddings for {label}.\n")
+
 
 def embed_and_update_benefits():
     with driver.session() as session:
@@ -88,6 +119,9 @@ if __name__ == "__main__":
     for label in ["Product", "Ingredient"]:
         embed_and_update_titles(label)
         create_vector_index(label, "title_embedding", dim=384)
+
+        embed_and_update_descriptions(label)
+        create_vector_index(label, "description_embedding", dim=768)
 
     embed_and_update_benefits()
     create_vector_index("Product", "ingredient_benefits_embedding", dim=768)
