@@ -162,3 +162,6 @@ cython_debug/
 #.idea/
 data
 node_context.json
+node_modules
+
+test*

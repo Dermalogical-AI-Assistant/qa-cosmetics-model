@@ -1,7 +1,11 @@
 from typing import List, Tuple
 from services.neo4j_service import driver
 from utils.get_sentence_models import embedding_model_node_retrieval, embedding_model_sentence_retrieval
+import torch
+torch.cuda.empty_cache()
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 def fetch_titles(tx, label: str) -> List[str]:
     query = f"""
@@ -40,7 +44,6 @@ def fetch_ingredient_benefits(tx) -> List[Tuple[str, str]]:
             clean_benefits = benefits.replace("\n", " ").strip()
             results.append((title, clean_benefits))
     return results
-
 
 def store_embeddings(tx, data: List[Tuple[str, List[float]]], field: str):
     for title, embedding in data:
@@ -82,7 +85,6 @@ def embed_and_update_descriptions(label: str):
         session.write_transaction(store_embeddings, data, "description_embedding")
         print(f"✅ Done with description embeddings for {label}.\n")
 
-
 def embed_and_update_benefits():
     with driver.session() as session:
         print(f"🔍 Fetching ingredient benefits...")
@@ -100,12 +102,19 @@ def embed_and_update_benefits():
         session.write_transaction(store_embeddings, data, "ingredient_benefits_embedding")
         print(f"✅ Done with ingredient benefit embeddings.\n")
 
+def drop_vector_index_if_exists(session, index_name: str):
+    try:
+        session.run(f"DROP INDEX {index_name} IF EXISTS;")
+        print(f"🗑️ Dropped existing vector index: {index_name}")
+    except Exception as e:
+        print(f"⚠️ Could not drop index {index_name}: {e}")
 
 def create_vector_index(label: str, field: str, dim: int = 768):
     index_name = f"{label.lower()}_{field}_vector_index"
     with driver.session() as session:
+        drop_vector_index_if_exists(session, index_name)
         session.run(f"""
-            CREATE VECTOR INDEX {index_name} IF NOT EXISTS
+            CREATE VECTOR INDEX {index_name}
             FOR (n:{label}) ON (n.{field})
             OPTIONS {{ indexConfig: {{
                 `vector.dimensions`: {dim},
@@ -113,7 +122,6 @@ def create_vector_index(label: str, field: str, dim: int = 768):
             }} }}
         """)
         print(f"✅ Created vector index: {index_name}")
-
 
 if __name__ == "__main__":
     for label in ["Product", "Ingredient"]:

@@ -1,5 +1,4 @@
 ---
-# The character | means that the content following it is block of literal text
 ENTITY_EXTRACTION: |
   You are an expert in extracting cosmetic product names and cosmetic ingredient entities from a sentence.
   Your task is to extract these two types of entities and report them in the following JSON format:
@@ -44,26 +43,24 @@ EXPLORE_KG_RELATIONSHIP: |
   Only include node types and relationships that are explicitly or implicitly mentioned in the question.
 
 FINAL_ANSWER_PROMPT_TEMPLATE: |
-  You are an excellent AI consultant specializing in cosmetics. You analyze cosmetics knowledge graphs to answer complex product- and ingredient-related questions. You provide direct answers when possible, followed by clear supporting explanations.
+  You are an excellent AI consultant specializing in cosmetics. You help clients understand the effects and composition of cosmetic products and ingredients based on verified product data.
+
   Question: {question}
 
-  You must analyze the following knowledge graph context for relevant evidence:
-  =============
-  context: {context}
-  If no context given or it does not have the related information, just use your own implicit knowledge to answer that question. 
+  You have access to reliable background information about various products and ingredients.
 
-  Based on the knowledge graph evidence, provide the following:
-  - Direct Answer: Answer the question. You can leverage the evidence from the knowledge graph to support your answer. Remember, you are consultant and you give the information to clients, do not recommend anything about techniques like knowledge graph, just answer the questions
-  - Output1: A concise direct answer summarizing the information of products or ingredients or whether an the product contains the ingredient, whether the ingredient is considered harmful, beneficial, or notable, and what supports that from the knowledge graph.
-  - Output2: Show the inference path used to arrive at the conclusion by extracting evidence from graph evidence.
-  - Output3: Provide provenance for the evidence used (e.g., relationship types and nodes involved, any source labels from the graph if available)
+  Your job:
+  - Provide a direct and easy-to-understand answer to the user's question.
+  - Summarize key insights about any relevant products or ingredients.
+  - Explain how you arrived at the conclusion (in user-friendly language).
+  - Include the origin of the information (e.g. based on known product compositions or ingredient usage history).
 
-  Then, return the result in the following JSON format:
+  Return the result in the following JSON format:
   {{
-    "Answer": "<direct answer>",
-    "Summary of key information": ["<summary of key info>"],
-    "Inference": ["<inference path>"],
-    "Provenance": ["<provenance>"]
+    "Answer": "<direct answer in clear, user-friendly language>",
+    "Summary of key information": ["<list of important facts about product or ingredient>"],
+    "Explanation": ["<how this conclusion was reached, in simple language>"],
+    "Source": ["<general origin of the information, e.g. product label data, typical usage of ingredient>"]
   }}
 
 FINAL_ANSWER_PROMPT_TEMPLATE_WITHOUT_KG: |

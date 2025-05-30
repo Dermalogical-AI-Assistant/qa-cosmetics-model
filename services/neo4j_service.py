@@ -5,7 +5,16 @@ from typing import List, Tuple
 from utils.get_env_variables import NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD
 from utils.get_sentence_models import embedding_model_node_retrieval, embedding_model_sentence_retrieval
 
-driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
+print(f'NEO4J_URI={NEO4J_URI}')
+print(f'NEO4J_USERNAME={NEO4J_USERNAME}')
+print(f'NEO4J_PASSWORD={NEO4J_PASSWORD}')
+
+driver = GraphDatabase.driver(
+    NEO4J_URI, 
+    auth=(NEO4J_USERNAME, NEO4J_PASSWORD),
+    max_connection_lifetime=3600,
+    connection_timeout=30
+)
 
 def vector_search_by_ingredient_benefit(query_benefit: str, top_k: int = 5) -> List[Tuple[str, str]]:
     query_embedding = embedding_model_sentence_retrieval.embed_query(query_benefit)
