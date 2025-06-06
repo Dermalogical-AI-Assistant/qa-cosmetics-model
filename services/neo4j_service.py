@@ -68,8 +68,11 @@ def vector_search(label: str, query: str, top_k: int = 1):
  
 def search_node_info(node_type, list_titles):
     properties = {
-        'Product': ['title', 'description', 'how_to_use', 'ingredient_benefits', 'skincare_concern'],
-        'Ingredient': ['title', 'cir_rating', 'categories', 'properties', 'preprocessed_introtext']
+        'Product': [
+            'id', 'title', 'description', 'how_to_use', 'ingredient_benefits', 
+            'skincare_concern', 'natural', 'ewg', 'analysis_text', 'price'
+        ],
+        'Ingredient': ['title', 'cir_rating', 'categories', 'properties', 'integer_properties', 'introtext']
     }
     
     query = f"""
@@ -272,7 +275,7 @@ def retrieve_context(entities, relationships=[], node_types=[], query=""):
             grouped[key].append(graph['relationship'])
 
         for (product, ingredient), relationships in grouped.items():
-            subgraph_context = f"Product '{product}' contains the ingredient {ingredient}, which has the following effects:\n"
+            subgraph_context = f"Product '{product}' has ingredient {ingredient}, which has the following effects:\n"
             for rel in relationships:
                 effect = f"- {rel['rel_type'].lower()}"
                 if rel['title']:

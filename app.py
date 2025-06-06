@@ -29,7 +29,6 @@ app = FastAPI(
 async def generate_cosmetics_answer(request: QuestionAnswerRequest):
     question = request.question
     answer = get_answer(question=question)
-    # return get_json(answer)
     print(f'inital answer: {answer}')
     return {'answer': get_json(answer)['Answer']}
 
