@@ -4,11 +4,13 @@ prompts:
 providers:
 - id: http
   config:
-    request: " |-\n                            POST /cosmetics-answer HTTP/1.1\n \
-      \                           Host: 127.0.0.1:8085\n                         \
-      \   Content-Type: application/json\n                            Accept: application/json\n\
-      \                            \n                            {\"question\": \"\
-      {{question}}\"}\n                        "
+    request: |-
+      POST /cosmetics-answer HTTP/1.1
+      Host: 127.0.0.1:8085
+      Content-Type: application/json
+      Accept: application/json
+      
+      {"question": "{{question}}"}                       "
     transformResponse: json.answer
 tests:
 - vars:
