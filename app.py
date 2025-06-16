@@ -1,7 +1,6 @@
 from pydantic import BaseModel, validator
 from fastapi import FastAPI
 from answer import get_answer
-from utils.common import get_json
 
 class QuestionAnswerRequest(BaseModel):
     question: str
@@ -29,8 +28,9 @@ app = FastAPI(
 async def generate_cosmetics_answer(request: QuestionAnswerRequest):
     question = request.question
     answer = get_answer(question=question)
-    print(f'inital answer: {answer}')
-    return {'answer': get_json(answer)['Answer']}
+    return {
+        'answer': answer 
+    }
 
 @app.get("/")
 def read_root():

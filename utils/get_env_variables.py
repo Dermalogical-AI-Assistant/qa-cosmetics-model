@@ -7,10 +7,10 @@ NEO4J_URI = os.getenv('NEO4J_URI')
 NEO4J_USERNAME = os.getenv('NEO4J_USERNAME')
 NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-CHATGPT_API_KEY = os.getenv('OPENAI_API_KEY')
+GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 CHAT_MODEL_ID = os.getenv('LLM')
 CHAT_DEPLOYMENT_ID = os.getenv('LLM')
-GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 with open('config.yaml', 'r') as f:
     config_data = yaml.safe_load(f)

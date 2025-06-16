@@ -1,19 +1,20 @@
 ---
 ENTITY_EXTRACTION: |
-  You are an expert in extracting cosmetic product names and cosmetic ingredient entities from a sentence.
-  Your task is to extract these two types of entities and report them in the following JSON format:
+  You are an expert in extracting cosmetic-related entities from natural language text. Your task is to identify and extract:
+  - Cosmetic Products – This includes product names (e.g., CeraVe Hydrating Cleanser, Neutrogena Sunscreen) or product types (e.g., moisturizer, face wash, lip balm).
+  - Cosmetic Ingredients – This includes ingredients commonly used in cosmetics (e.g., hyaluronic acid, retinol, niacinamide).
+  - Return your results in the following JSON format:
   {
-    "Products": ["<List of cosmetic product names, if any>"],
+    "Products": ["<List of cosmetic product (name or type), if any>"],
     "Ingredients": ["<List of cosmetic ingredients, if any>"]
   }
-
   Input Sentence: {question}
 
   Instructions:
-  - Extract cosmetic product names if mentioned. It must be the product name, not the cosmetic product type (e.g. Cleaser)
-  - Extract cosmetic ingredients, even if product names are not present.
-  - Ignore diseases, medical conditions, or any non-cosmetic entities.
-  - If no entities are found, you must return Null
+  - Only extract cosmetic product names or types and cosmetic ingredients.
+  - You may include general product types if brand names are not mentioned.
+  - Ignore non-cosmetic terms such as diseases, medical conditions, or unrelated products.
+  - If no valid products or ingredients are found, return Null
 
 EXPLORE_KG_RELATIONSHIP: |
   You are working with a cosmetics knowledge graph.
@@ -46,21 +47,19 @@ FINAL_ANSWER_PROMPT_TEMPLATE: |
   You are an excellent AI consultant specializing in cosmetics. You help clients understand the effects and composition of cosmetic products and ingredients based on verified product data.
 
   Question: {question}
+  Context: {context}
 
-  You have access to reliable background information about various products and ingredients.
-
+  You have access to reliable background information about various products and ingredients. 
+  If a question asks for the benefits or properties of any product or ingredient, you must refer strictly to the knowledge graph to generate the answer, use the right title that is used in the Knowledge Graph .
+  
   Your job:
   - Provide a direct and easy-to-understand answer to the user's question.
-  - Summarize key insights about any relevant products or ingredients.
   - Explain how you arrived at the conclusion (in user-friendly language).
-  - Include the origin of the information (e.g. based on known product compositions or ingredient usage history).
 
   Return the result in the following JSON format:
   {{
     "Answer": "<direct answer in clear, user-friendly language>",
-    "Summary of key information": ["<list of important facts about product or ingredient>"],
     "Explanation": ["<how this conclusion was reached, in simple language>"],
-    "Source": ["<general origin of the information, e.g. product label data, typical usage of ingredient>"]
   }}
 
 FINAL_ANSWER_PROMPT_TEMPLATE_WITHOUT_KG: |

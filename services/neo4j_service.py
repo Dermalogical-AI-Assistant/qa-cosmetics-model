@@ -56,7 +56,7 @@ def vector_search(label: str, query: str, top_k: int = 1):
     embedding = embedding_model_node_retrieval.embed_query(query)
 
     cypher = f"""
-        CALL db.index.vector.queryNodes('{label.lower()}_title_vector_index', $topK, $embedding)
+        CALL db.index.vector.queryNodes('{label.lower()}_title_embedding_vector_index', $topK, $embedding)
         YIELD node, score
         RETURN node.title AS title, score
         ORDER BY score DESC
@@ -70,7 +70,7 @@ def search_node_info(node_type, list_titles):
     properties = {
         'Product': [
             'id', 'title', 'description', 'how_to_use', 'ingredient_benefits', 
-            'skincare_concern', 'natural', 'ewg', 'analysis_text', 'price'
+            'skincare_concern', 'natural', 'ewg', 'analysis_text', 'price', 'full_ingredients_list'
         ],
         'Ingredient': ['title', 'cir_rating', 'categories', 'properties', 'integer_properties', 'introtext']
     }
@@ -100,7 +100,7 @@ def search_triplet_info(list_products, list_ingredients, relationships):
     all_queries = []
 
     for r in relationships:
-        conditions = []
+        conditions = ["type(r) <> 'HAS'"]
         if list_products:
             conditions.append("p.title IN $list_products")
         if list_ingredients:
@@ -216,20 +216,12 @@ def retrieve_context(entities, relationships=[], node_types=[], query=""):
     if product_nodes:
         context_product = "### Products:\n"
         for product in product_nodes:
-            product_context = f"- Product {product['title']} targets {', '.join(product['skincare_concern'])} concerns."
-            
-            description = product.get('description')
-            if description and isinstance(description, str):
-                product_context += f" It is described as: {product['description'].strip()}."
-              
-            how_to_use = product.get('how_to_use')
-            if how_to_use and isinstance(how_to_use, str):
-                product_context += f" How to use: {product['how_to_use'].strip()}."
-            
-            ingredient_benefits = product.get('ingredient_benefits')
-            if ingredient_benefits and isinstance(ingredient_benefits, str):
-                product_context += f" Ingredient benefits include: {product['ingredient_benefits']}."
-            
+            product_context = f"** Product {product['title']}: \n"
+            for key in product.keys():
+                if key not in ['title', 'id']:
+                    value = product[key]
+                    if value and str(value).lower() != 'nan':
+                        product_context += f"- {key.replace('_', ' ').capitalize()}: {value}.\n"
             context_product += product_context + "\n"
 
         context += context_product
@@ -239,29 +231,14 @@ def retrieve_context(entities, relationships=[], node_types=[], query=""):
         context_ingredient = "\n### Ingredients:\n"
         
         for ingredient in ingredient_nodes:
-            ingredient_context = f"- Ingredient {ingredient['title']}"
+            context_ingredient = f"** Ingredient {ingredient['title']}"
 
-            if ingredient.get('preprocessed_introtext') and str(ingredient['preprocessed_introtext']).lower() != 'nan':
-                ingredient_context += f" is {ingredient['preprocessed_introtext']}"
-
-            if ingredient.get('properties') and str(ingredient['properties']).lower() != 'nan':
-                try:
-                    properties = ast.literal_eval(ingredient['properties'])
-                    if isinstance(properties, list):
-                        ingredient_context += f". Properties: {', '.join(properties)}"
-                except Exception as e:
-                    print(f"Error parsing properties: {e}")
-
-            if ingredient.get('categories') and str(ingredient['categories']).lower() != 'nan':
-                ingredient_context += f". Categories: {ingredient['categories']}"
-
-            if ingredient.get('cir_rating'):
-                ingredient_context += f". CIR rating: {ingredient['cir_rating']}"
-
-            if ingredient.get('preprocessed_ewg_ingre', {}).get('decision'):
-                ingredient_context += f". EWG decision: {ingredient['preprocessed_ewg_ingre']['decision']}"
-
-            context_ingredient += ingredient_context + ".\n"
+            for key in ingredient.keys():
+                if key not in ['title', 'id']:
+                    value = ingredient[key]
+                    if value and str(value).lower() != 'nan':
+                        context_ingredient += f"- {key.replace('_', ' ').capitalize()}: {value}.\n"
+            context_ingredient += context_ingredient + "\n"
 
         context += context_ingredient
 
@@ -275,14 +252,25 @@ def retrieve_context(entities, relationships=[], node_types=[], query=""):
             grouped[key].append(graph['relationship'])
 
         for (product, ingredient), relationships in grouped.items():
-            subgraph_context = f"Product '{product}' has ingredient {ingredient}, which has the following effects:\n"
-            for rel in relationships:
-                effect = f"- {rel['rel_type'].lower()}"
-                if rel['title']:
-                    effect += f" {rel['title'].lower()}"
-                if rel['description']:
-                    effect += f": {rel['description']}"
-                subgraph_context += f"{effect}\n"
+            if len(relationships) == 1 and relationships[0].get('rel_type', '').lower() == 'has':
+                # subgraph_context = f"Product '{product}' has ingredient {ingredient}"
+                subgraph_context = ""
+            else:
+                effects = []
+                for rel in relationships:
+                    effect = f"- {rel.get('rel_type', '')} EFFECT =>"
+                    title = rel.get('title', '').strip()
+                    description = rel.get('description', '').strip()
+                    if title:
+                        effect += f" {title.lower()}"
+                    if description:
+                        effect += f": {description}"
+                    effects.append(effect)
+                effects_text = "\n".join(effects)
+                subgraph_context = (
+                    f"** Product '{product}' has ingredient '{ingredient}', which has the following effects:\n{effects_text}"
+                )
+
             context_subgraph += subgraph_context + "\n"
 
         context += context_subgraph
