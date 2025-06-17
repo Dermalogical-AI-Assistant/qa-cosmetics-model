@@ -1,7 +1,6 @@
 import chat_pb2
 import chat_pb2_grpc
 from answer import get_answer
-from utils.common import get_json
 from datetime import datetime
 import grpc
 import logging
@@ -23,12 +22,11 @@ class ChatServicer(chat_pb2_grpc.ChatServiceServicer):
             logger.info(f"Processing question: {request.question}")
             
             # Business logic
-            initial_answer = get_answer(question=request.question)
-            answer_json = get_json(initial_answer)
+            answer = get_answer(question=request.question)
             
             return chat_pb2.MessageResponse(
                 success=True,
-                answer=answer_json.get('Answer', 'Default answer'),
+                answer=answer,
                 timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             )
             
