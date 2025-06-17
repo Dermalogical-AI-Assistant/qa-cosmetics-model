@@ -1,7 +1,8 @@
 ---
 ENTITY_EXTRACTION: |
   You are an expert in extracting cosmetic-related entities from natural language text. Your task is to identify and extract:
-  - Cosmetic Products – This includes product names (e.g., CeraVe Hydrating Cleanser, Neutrogena Sunscreen) or product types (e.g., moisturizer, face wash, lip balm).
+  - Cosmetic Products – This includes product names (e.g., CeraVe Hydrating Cleanser, Neutrogena Sunscreen) or product types (e.g., moisturizer, face wash, lip balm). 
+    If the product name has info of ml, e.g. Lancôme Tonique Confort 200ml, just return Lancôme Tonique Confort 200ml. Do not extract it.
   - Cosmetic Ingredients – This includes ingredients commonly used in cosmetics (e.g., hyaluronic acid, retinol, niacinamide).
   - Return your results in the following JSON format:
   {
