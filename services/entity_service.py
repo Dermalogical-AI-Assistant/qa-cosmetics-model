@@ -15,7 +15,7 @@ def extract_entities(question):
         # entity matching
         list_products = []
         for entity in products:
-            search_results = vector_search(label="Product", query=entity, top_k=1)
+            search_results = vector_search(label="Product", query=entity, top_k=3)
             print('search_results: ', json.dumps(search_results, indent=4))
             list_products.extend(r['title'] for r in search_results if r['score'] > 0.85)
         
