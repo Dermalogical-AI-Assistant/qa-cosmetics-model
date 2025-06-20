@@ -2,12 +2,36 @@ import pandas as pd
 import requests
 from time import sleep
 import logging
-from tqdm import tqdm 
 import os
 from dotenv import load_dotenv
 load_dotenv()
 import os
 from openai import AzureOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import PromptTemplate
+import re 
+import json
+
+def get_json(response):
+    if isinstance(response, dict):
+        return response
+
+    if isinstance(response, str):
+        match = re.search(r'\{.*\}', response, re.DOTALL) 
+        if match:
+            json_resp = match.group(0)
+            return json.loads(json_resp)
+        
+    return {} 
+
+gemini_2_flash = ChatGoogleGenerativeAI(
+    model="gemini-2.0-flash",
+    temperature=0.3,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2,
+    api_key="AIzaSyCXfzvLnWL1yD0BJ8cC4xSxJiKFwAJUzlQ"
+)
 
 endpoint = "https://xenwi-mbuovdcl-eastus2.cognitiveservices.azure.com/"
 model_name = "gpt-4o"
@@ -69,29 +93,37 @@ Return your evaluation in this JSON format:
 }}
 """
 
+def fetch_llm_response(question, correct_answer, generated_answer, prompt = EVALUATION_PROMPT, llm = gemini_2_flash):
+    prompt_template = PromptTemplate.from_template(prompt)
+    formatted_prompt = prompt_template.invoke({"question": question, "correct_answer": correct_answer, "generated_answer": generated_answer})
+    response = llm.invoke(formatted_prompt)
+    response = get_json(response.content)
+    return response
 
 
 def evaluate_answer(question, correct_answer, generated_answer):
     """Evaluate the generated answer using LLM with detailed rubric"""
     try:        
-        prompt = EVALUATION_PROMPT.replace("{question}", question).replace("{correct_answer}", correct_answer).replace("{generated_answer}", generated_answer)
+        # prompt = EVALUATION_PROMPT.replace("{question}", question).replace("{correct_answer}", correct_answer).replace("{generated_answer}", generated_answer)
 
-        response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            temperature=1.0,
-            top_p=1.0,
-            model=deployment
-        )
-        import json
-        content = response.choices[0].message.content
-        content = content.strip("```json").strip("```").strip().replace('{{', '{').replace('}}', '}')
+        # response = client.chat.completions.create(
+        #     messages=[{"role": "user", "content": prompt}],
+        #     temperature=1.0,
+        #     top_p=1.0,
+        #     model=deployment
+        # )
+        # import json
+        # content = response.choices[0].message.content
+        # content = content.strip("```json").strip("```").strip().replace('{{', '{').replace('}}', '}')
 
-        parsed = json.loads(content)
-        verdict = parsed.get("verdict")
-        score = parsed.get("score")
-        explanation = parsed.get("explanation")
-        accuracy = parsed.get("accuracy")
-        relevance = parsed.get("relevance")
+        # parsed = json.loads(content)
+
+        response = fetch_llm_response(question=question, correct_answer=correct_answer, generated_answer=generated_answer)
+        verdict = response.get("verdict")
+        score = response.get("score")
+        explanation = response.get("explanation")
+        accuracy = response.get("accuracy")
+        relevance = response.get("relevance")
 
         print("\nVerdict:", verdict)
         print("Score:", score)
@@ -124,10 +156,10 @@ def process_qa_file(file_name, api_url='http://127.0.0.1:8085/cosmetics-answer')
             df['Response_Time'] = None
             
         for i, row in df.iterrows():
-            question = row['Question'].replace('Are there any', 'What are')
+            question = f"{row['Question']} Do not mind the 'ingredient benefits' of product!"
             correct_answer = row['Answer']
             
-            if pd.isna(question) or question.strip() == '':
+            if pd.isna(question) or question.strip() == '' or pd.isna(correct_answer) or correct_answer.strip() == '' :
                 logging.warning(f"Empty question in row {i}")
                 continue
                 
@@ -187,10 +219,11 @@ def process_qa_file(file_name, api_url='http://127.0.0.1:8085/cosmetics-answer')
         raise
 
 if __name__ == "__main__":
-    file_name = 'neo4j/products/neo4j_products_skincare_concern.csv'
+    file_name = 'neo4j/product_triplets/neo4j_products_notable_ingredients.csv'
+    # file_name = '/home/jasmine/Documents/Study/DATN/code/qa-cosmetics-model/evaluate/result/tdcosmetics/final/neo4j_products_price_errors.csv'
     try:
-        result_df = process_qa_file(file_name)
+        result_df = process_qa_file(f'{file_name}')
         result_df.to_csv(f'result/tdcosmetics/{file_name}', index=False)
-        print(f"\nProcessing complete. Results saved to result/{file_name}")
+        print(f"\nProcessing complete. Results saved to {file_name}")
     except Exception as e:
         print(f"Error occurred: {str(e)}")

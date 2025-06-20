@@ -100,7 +100,7 @@ def search_triplet_info(list_products, list_ingredients, relationships):
     all_queries = []
 
     for r in relationships:
-        conditions = ["type(r) <> 'HAS'"]
+        conditions = []
         if list_products:
             conditions.append("p.title IN $list_products")
         if list_ingredients:
@@ -108,7 +108,7 @@ def search_triplet_info(list_products, list_ingredients, relationships):
 
         where_clause = ""
         if conditions:
-            where_clause = "WHERE " + " AND ".join(conditions)
+            where_clause = "WHERE type(r) <> 'HAS' AND " + " OR ".join(conditions)
 
         query_per_relationship = f"""
             MATCH (p:Product)-[r:{r}]->(i:Ingredient)
@@ -259,8 +259,8 @@ def retrieve_context(entities, relationships=[], node_types=[], query=""):
                 effects = []
                 for rel in relationships:
                     effect = f"- {rel.get('rel_type', '')} EFFECT =>"
-                    title = rel.get('title', '').strip()
-                    description = rel.get('description', '').strip()
+                    title = rel.get('title', '')
+                    description = rel.get('description', '')
                     if title:
                         effect += f" {title.lower()}"
                     if description:
