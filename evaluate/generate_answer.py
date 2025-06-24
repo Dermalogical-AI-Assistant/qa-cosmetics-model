@@ -157,7 +157,7 @@ def process_qa_file(file_name, api_url='http://127.0.0.1:8085/cosmetics-answer')
             
         for i, row in df.iterrows():
             print(f'Row = {i}')
-            question = f"{row['Question']} Do not mind the 'ingredient benefits' of product!"
+            question = f"{row['Question']}"
             correct_answer = row['Answer']
             
             if pd.isna(question) or question.strip() == '' or pd.isna(correct_answer) or correct_answer.strip() == '' :
@@ -219,8 +219,7 @@ def process_qa_file(file_name, api_url='http://127.0.0.1:8085/cosmetics-answer')
         logging.critical(f"Fatal error processing file: {str(e)}")
 
 if __name__ == "__main__":
-    # file_name = 'neo4j/product_triplets/neo4j_products_harmful_ingredients.csv'
-    file_name = 'result/tdcosmetics/neo4j/neo4j_products_price_errors.csv'
+    file_name = '/home/jasmine/Documents/Study/DATN/code/qa-cosmetics-model/evaluate/result/tdcosmetics/beauty_center/beauty_center_not_score.csv'
     try:
         result_df = process_qa_file(f'{file_name}')
         result_df.to_csv(f'{file_name}', index=False)
